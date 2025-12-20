@@ -1,43 +1,43 @@
 # ==========================================
-# 🔰 Clash Meta (Mihomo) 链式代理新手模版
-# 这里的配置是为了让你的网络更安全、更稳定。
-# 哪怕你是第一次用，跟着注释里的“👉”操作也能搞定！
+# 🔰 Clash Meta (Mihomo) 链式代理 - 终极开源模版
+# 集成全量国内白名单 + B站修复 + 游戏优化
 # ==========================================
 
-# --- 1. 基础设置 (不需要动) ---
-# 这些是软件运行的端口，保持默认就好
+# --- 1. 基础设置 (保持默认) ---
 port: 7890
 socks-port: 7891
 redir-port: 7892
 mixed-port: 7893
-allow-lan: true
+allow-lan: false
+unified-delay: true
 mode: rule
 log-level: info
 ipv6: false
 external-controller: 0.0.0.0:9090
 
-# --- 2. DNS 设置 (不需要动) ---
-# 这里是负责把网址变成IP的，已经配置好了防泄漏和国内优化。
-# 这里的网址不需要你填，保持原样即可。
+# --- 2. DNS 设置 (已按你的要求配置) ---
+# 👉 这里不需要动，直接沿用你提供的优化方案
 dns:
   enable: true
   ipv6: false
   listen: 0.0.0.0:53
   fake-ip-filter:
     - "*.lan"
+    - "*.srv.nintendo.net"
     - "*.stun.playstation.net"
     - "xbox.*.microsoft.com"
     - "*.xboxlive.com"
+    - "*.teafone.com"
+    - "*.sktswe.net"
+    - "rtc.goodfone.co.kr"
+    - "*.chattti.com"
   nameserver:
-    - 223.5.5.5
     - 119.29.29.29
-  fallback:
-    - tls://1.1.1.1:853
-    - tls://8.8.8.8:853
-  fallback-filter:
-    geoip: true
-    ipcidr:
-      - 240.0.0.0/4
+    - 223.5.5.5
+    - tls://223.5.5.5:853
+    - tls://223.6.6.6:853
+    - tls://120.53.53.53
+    - tls://1.12.12.12
 
 # ==========================================
 # 👇 这里是唯一需要你动手修改的地方 👇
@@ -45,10 +45,11 @@ dns:
 proxies:
   # ----------------------------------------
   # A 类：入口节点 (填写你买的机场节点)
+  # 作用：作为跳板，负责翻墙
   # ----------------------------------------
-  - name: "✈️ 入口-香港"
+  - name: "🇭🇰 入口-香港"
     type: ss  # 👉 如果机场是 vmess，这里就改 vmess
-    # 👉 下面这些信息，去打开你机场订阅文件里找 (教程在 README 里)
+    # 👉 下面这些信息，去打开你机场订阅文件里找 (README里有教程)
     server: hk.example.com       # 👉 填机场的服务器地址 (Server)
     port: 12345                  # 👉 填端口 (Port)
     cipher: aes-128-gcm          # 👉 填加密方式 (Cipher/Method)
@@ -57,6 +58,7 @@ proxies:
 
   # ----------------------------------------
   # B 类：出口节点 (填写你的静态IP/落地机)
+  # 作用：提供纯净 IP，访问 AI 或流媒体
   # ----------------------------------------
   - name: "🚀 链式-静态落地出口"
     type: socks5  # 👉 如果你是买的 socks5 代理就填这个
@@ -64,58 +66,114 @@ proxies:
     port: 8080                   # 👉 填商家给你的端口
     username: "user"             # 👉 填用户名 (没有就删掉这行)
     password: "password"         # 👉 填密码 (没有就删掉这行)
+    dialer-proxy: "🚪 链式-入口选择" # 👈 核心魔法：强制走上面的入口
     skip-cert-verify: true
     udp: true
-    # 👇 这句话是魔法核心，千万别改！它让流量先走上面的机场，再连这个静态IP
-    dialer-proxy: "🚪 链式-入口选择"
 
 # ==========================================
-# 策略组 (不需要动，除非你想改名字)
+# 策略组 (已配置好，无需修改)
 # ==========================================
 proxy-groups:
-  # 主开关
+  # 1. 主开关：决定流量最终去向
   - name: "Final"
     type: select
     proxies:
-      - "🤖 AI-隐私专用"
-      - "📥 大流量下载"
-      - "DIRECT"
+      - "🚀 链式-静态落地出口" # 默认走链式
+      - "DIRECT"             # 紧急情况切直连
 
-  # AI 专用通道 (强制走链式)
-  - name: "🤖 AI-隐私专用"
-    type: select
-    proxies:
-      - "🚀 链式-静态落地出口"
-
-  # 入口切换器 (在这里选你要用哪个机场节点中转)
+  # 2. 入口切换器：在这里选你要用哪个机场节点中转
   - name: "🚪 链式-入口选择"
     type: select
     proxies:
-      - "✈️ 入口-香港"
-      # 如果你在上面 proxies 里加了日本节点，记得在这里也加上
-      # - "✈️ 入口-日本" 
-
-  # 下载专用通道 (走直连或廉价节点)
-  - name: "📥 大流量下载"
-    type: select
-    proxies:
-      - "DIRECT" 
-      # 如果你有廉价节点，可以加在 proxies 里然后在这里引用
+      - "🇭🇰 入口-香港"
+      # 如果你在 proxies 里加了日本/美国节点，记得在这里也加上
+      # - "🇯🇵 入口-日本" 
 
 # ==========================================
-# 分流规则 (已自动配置好，不需要动)
+# 分流规则 (已集成你提供的全量白名单)
 # ==========================================
 rules:
-  # AI 自动走链式
-  - DOMAIN-SUFFIX,openai.com,🤖 AI-隐私专用
-  - DOMAIN-SUFFIX,chatgpt.com,🤖 AI-隐私专用
-  - DOMAIN-SUFFIX,claude.ai,🤖 AI-隐私专用
-  - DOMAIN-KEYWORD,gemini,🤖 AI-隐私专用
-  
-  # B站修正 (防卡顿)
-  - DOMAIN-SUFFIX,hdslb.com,DIRECT
+  # --- 1. 基础防呆 ---
+  - DOMAIN,sub.bajieurl.com,DIRECT
+  - IP-CIDR,127.0.0.1/32,DIRECT,no-resolve
+  - DOMAIN-SUFFIX,local,DIRECT,no-resolve
+  - IP-CIDR,192.168.0.0/16,DIRECT,no-resolve
+  - IP-CIDR,10.0.0.0/8,DIRECT,no-resolve
+  - IP-CIDR,172.16.0.0/12,DIRECT,no-resolve
+  - IP-CIDR,100.64.0.0/10,DIRECT,no-resolve
+  - IP-CIDR,17.0.0.0/8,DIRECT,no-resolve
+
+  # --- 2. 系统/应用/微软/测速直连 ---
+  - DOMAIN-SUFFIX,amap.com,DIRECT
+  - DOMAIN-SUFFIX,autonavi.com,DIRECT
+  - DOMAIN-SUFFIX,flyert.com,DIRECT
+  - DOMAIN-SUFFIX,snapdrop.net,DIRECT
+  - DOMAIN,download.jetbrains.com,DIRECT
+  - DOMAIN,origin-a.akamaihd.net,DIRECT
+  - DOMAIN,outlook.office365.com,DIRECT
+  - DOMAIN,smtp-mail.outlook.com,DIRECT
+  - DOMAIN,smtp.office365.com,DIRECT
+  - DOMAIN-SUFFIX,dl.delivery.mp.microsoft.com,DIRECT
+  - DOMAIN-SUFFIX,update.microsoft.com,DIRECT
+  - DOMAIN-SUFFIX,windowsupdate.com,DIRECT
+  - DOMAIN-SUFFIX,windowsupdate.microsoft.com,DIRECT
+  - DOMAIN,download.microsoft.com,DIRECT
+  - DOMAIN,wustat.windows.com,DIRECT
+  - DOMAIN,ntservicepack.microsoft.com,DIRECT
+  - DOMAIN,ip.istatmenus.app,DIRECT
+  - DOMAIN,sms.imagetasks.com,DIRECT
+  - DOMAIN-SUFFIX,netspeedtestmaster.com,DIRECT
+  - DOMAIN,speedtest.macpaw.com,DIRECT
+
+  # --- 3. 国内大厂域名 (强制直连) ---
+  - DOMAIN-SUFFIX,cn,DIRECT
+  - DOMAIN-SUFFIX,qq.com,DIRECT
+  - DOMAIN-SUFFIX,tencent.com,DIRECT
+  - DOMAIN-SUFFIX,weixin.com,DIRECT
+  - DOMAIN-SUFFIX,aliyun.com,DIRECT
+  - DOMAIN-SUFFIX,taobao.com,DIRECT
+  - DOMAIN-SUFFIX,tmall.com,DIRECT
+  - DOMAIN-SUFFIX,jd.com,DIRECT
+  - DOMAIN-SUFFIX,baidu.com,DIRECT
+  - DOMAIN-SUFFIX,bdstatic.com,DIRECT
+  - DOMAIN-SUFFIX,163.com,DIRECT
+  - DOMAIN-SUFFIX,126.net,DIRECT
+  - DOMAIN-SUFFIX,360.cn,DIRECT
+  - DOMAIN-SUFFIX,360buyimg.com,DIRECT
+  - DOMAIN-SUFFIX,douyin.com,DIRECT
+  - DOMAIN-SUFFIX,iqiyi.com,DIRECT
+  - DOMAIN-SUFFIX,youku.com,DIRECT
+  - DOMAIN-SUFFIX,mgtv.com,DIRECT
+  - DOMAIN-SUFFIX,zhihu.com,DIRECT
+  - DOMAIN-SUFFIX,weibo.com,DIRECT
+  - DOMAIN-SUFFIX,xiaomi.com,DIRECT
+  - DOMAIN-SUFFIX,meituan.com,DIRECT
+  - DOMAIN-SUFFIX,dianping.com,DIRECT
+  - DOMAIN-SUFFIX,douban.com,DIRECT
+  - DOMAIN-SUFFIX,sohu.com,DIRECT
+  - DOMAIN-SUFFIX,sogou.com,DIRECT
+  - DOMAIN-SUFFIX,sina.com.cn,DIRECT
+  - DOMAIN-SUFFIX,smzdm.com,DIRECT
+  - DOMAIN-SUFFIX,caiyunapp.com,DIRECT
+  - DOMAIN-KEYWORD,alipay,DIRECT
+  - DOMAIN-KEYWORD,alicdn,DIRECT
+  - DOMAIN-KEYWORD,baidu,DIRECT
+
+  # --- 4. B站修复版 (包含CDN域名) ---
   - DOMAIN-SUFFIX,bilibili.com,DIRECT
-  
-  # 国内直连
-  - GEOIP,CN,DIRECT
+  - DOMAIN-SUFFIX,bilivideo.com,DIRECT
+  - DOMAIN-SUFFIX,hdslb.com,DIRECT
+  - DOMAIN-SUFFIX,bilibili.co,DIRECT
+  - DOMAIN-SUFFIX,biliapi.net,DIRECT
+  - DOMAIN-SUFFIX,biliapi.com,DIRECT
+
+  # --- 5. 腾讯游戏/直连IP段 ---
+  - IP-CIDR,182.254.116.0/24,DIRECT,no-resolve
+  - IP-CIDR,203.205.238.0/23,DIRECT,no-resolve
+  - IP-CIDR,203.205.254.0/23,DIRECT,no-resolve
+
+  # --- 6. 兜底逻辑 ---
+  # 中国 IP 强制直连
+  - GEOIP,CN,DIRECT,no-resolve
+  # 剩下的所有 -> 走链式代理
   - MATCH,Final
