@@ -1,179 +1,168 @@
 # ==========================================
-# 🔰 Clash Meta (Mihomo) 链式代理 - 终极开源模版
-# 集成全量国内白名单 + B站修复 + 游戏优化
+# 🔰 Clash Meta (Mihomo) 链式代理 - 修复增强版
+# 更新内容：端口改为7890混合、增强国内白名单(修复字节跳动/网易)、DNS优化
 # ==========================================
 
-# --- 1. 基础设置 (保持默认) ---
-port: 7890
-socks-port: 7891
-redir-port: 7892
-mixed-port: 7893
-allow-lan: false
-unified-delay: true
+# --- 1. 基础设置 ---
+mixed-port: 7890        # 混合端口 (HTTP+SOCKS5)
+allow-lan: true         # 开启局域网共享
+bind-address: '*'       # 允许局域网内所有IP连接
 mode: rule
 log-level: info
-ipv6: false
+ipv6: true              # 建议开启，避免部分V6环境报错
 external-controller: 0.0.0.0:9090
 
-# --- 2. DNS 设置 (已按你的要求配置) ---
-# 👉 这里不需要动，直接沿用你提供的优化方案
+# --- 2. DNS 设置 (防泄漏 + 国内优化) ---
 dns:
   enable: true
   ipv6: false
   listen: 0.0.0.0:53
+  enhanced-mode: fake-ip
+  fake-ip-range: 198.18.0.1/16
   fake-ip-filter:
     - "*.lan"
     - "*.srv.nintendo.net"
     - "*.stun.playstation.net"
     - "xbox.*.microsoft.com"
     - "*.xboxlive.com"
-    - "*.teafone.com"
-    - "*.sktswe.net"
-    - "rtc.goodfone.co.kr"
-    - "*.chattti.com"
+    - "*.msftncsi.com"
+    - "*.msftconnecttest.com"
+    - "localhost.ptlogin2.qq.com"
   nameserver:
-    - 119.29.29.29
     - 223.5.5.5
-    - tls://223.5.5.5:853
-    - tls://223.6.6.6:853
-    - tls://120.53.53.53
-    - tls://1.12.12.12
+    - 119.29.29.29
+  fallback:
+    - tls://1.1.1.1:853
+    - tls://8.8.8.8:853
+  fallback-filter:
+    geoip: true
+    ipcidr:
+      - 240.0.0.0/4
 
 # ==========================================
-# 👇 这里是唯一需要你动手修改的地方 👇
+# 👇 请在下方填入你的节点信息 👇
 # ==========================================
 proxies:
   # ----------------------------------------
-  # A 类：入口节点 (填写你买的机场节点)
-  # 作用：作为跳板，负责翻墙
+  # A 类：入口节点 (填写你买的机场节点/中转机)
   # ----------------------------------------
-  - name: "🇭🇰 入口-香港"
-    type: ss  # 👉 如果机场是 vmess，这里就改 vmess
-    # 👉 下面这些信息，去打开你机场订阅文件里找 (README里有教程)
-    server: hk.example.com       # 👉 填机场的服务器地址 (Server)
-    port: 12345                  # 👉 填端口 (Port)
-    cipher: aes-128-gcm          # 👉 填加密方式 (Cipher/Method)
-    password: "你的密码"          # 👉 填密码 (Password/UUID)
+  - name: "✈️ 入口-香港"
+    type: ss  # 👉 如果是 vmess 就改 vmess，注意缩进
+    # 👇👇👇 在这里填入信息 👇👇👇
+    server: hk.example.com       # 填服务器地址
+    port: 12345                  # 填端口
+    cipher: aes-128-gcm          # 填加密方式
+    password: "你的密码"          # 填密码/UUID
     udp: true
 
   # ----------------------------------------
   # B 类：出口节点 (填写你的静态IP/落地机)
-  # 作用：提供纯净 IP，访问 AI 或流媒体
   # ----------------------------------------
   - name: "🚀 链式-静态落地出口"
-    type: socks5  # 👉 如果你是买的 socks5 代理就填这个
-    server: 1.2.3.4              # 👉 填商家给你的 IP 地址
-    port: 8080                   # 👉 填商家给你的端口
-    username: "user"             # 👉 填用户名 (没有就删掉这行)
-    password: "password"         # 👉 填密码 (没有就删掉这行)
-    dialer-proxy: "🚪 链式-入口选择" # 👈 核心魔法：强制走上面的入口
+    type: socks5  # 👉 静态IP通常是 socks5
+    # 👇👇👇 在这里填入信息 👇👇👇
+    server: 1.2.3.4              # 填落地IP
+    port: 8080                   # 填落地端口
+    username: "user"             # 用户名 (没有就删掉这行)
+    password: "password"         # 密码 (没有就删掉这行)
     skip-cert-verify: true
     udp: true
+    # 👇 链式代理核心：流量先走"入口"，再连"出口"
+    dialer-proxy: "🚪 链式-入口选择"
 
 # ==========================================
-# 策略组 (已配置好，无需修改)
+# 策略组 (逻辑控制)
 # ==========================================
 proxy-groups:
-  # 1. 主开关：决定流量最终去向
+  # 主开关
   - name: "Final"
     type: select
     proxies:
-      - "🚀 链式-静态落地出口" # 默认走链式
-      - "DIRECT"             # 紧急情况切直连
+      - "🤖 AI-隐私专用"
+      - "📥 大流量下载"
+      - "DIRECT"
 
-  # 2. 入口切换器：在这里选你要用哪个机场节点中转
+  # AI 专用通道 (强制走链式-静态IP)
+  - name: "🤖 AI-隐私专用"
+    type: select
+    proxies:
+      - "🚀 链式-静态落地出口"
+
+  # 入口切换器 (在这里选你要用哪个机场节点作为前置中转)
   - name: "🚪 链式-入口选择"
     type: select
     proxies:
-      - "🇭🇰 入口-香港"
-      # 如果你在 proxies 里加了日本/美国节点，记得在这里也加上
-      # - "🇯🇵 入口-日本" 
+      - "✈️ 入口-香港"
+      # - "✈️ 入口-日本" # 如果你在上面加了其他入口，这里记得加上
+
+  # 下载专用通道 (通常建议直连或用便宜节点，不浪费静态流量)
+  - name: "📥 大流量下载"
+    type: select
+    proxies:
+      - "DIRECT" 
+      - "✈️ 入口-香港"
 
 # ==========================================
-# 分流规则 (已集成你提供的全量白名单)
+# 分流规则 (已集成核弹级白名单修复)
 # ==========================================
 rules:
-  # --- 1. 基础防呆 ---
-  - DOMAIN,sub.bajieurl.com,DIRECT
+  # --- 1. 局域网 & 基础直连 ---
   - IP-CIDR,127.0.0.1/32,DIRECT,no-resolve
   - DOMAIN-SUFFIX,local,DIRECT,no-resolve
   - IP-CIDR,192.168.0.0/16,DIRECT,no-resolve
   - IP-CIDR,10.0.0.0/8,DIRECT,no-resolve
   - IP-CIDR,172.16.0.0/12,DIRECT,no-resolve
-  - IP-CIDR,100.64.0.0/10,DIRECT,no-resolve
-  - IP-CIDR,17.0.0.0/8,DIRECT,no-resolve
 
-  # --- 2. 系统/应用/微软/测速直连 ---
-  - DOMAIN-SUFFIX,amap.com,DIRECT
-  - DOMAIN-SUFFIX,autonavi.com,DIRECT
-  - DOMAIN-SUFFIX,flyert.com,DIRECT
-  - DOMAIN-SUFFIX,snapdrop.net,DIRECT
-  - DOMAIN,download.jetbrains.com,DIRECT
-  - DOMAIN,origin-a.akamaihd.net,DIRECT
-  - DOMAIN,outlook.office365.com,DIRECT
-  - DOMAIN,smtp-mail.outlook.com,DIRECT
-  - DOMAIN,smtp.office365.com,DIRECT
-  - DOMAIN-SUFFIX,dl.delivery.mp.microsoft.com,DIRECT
-  - DOMAIN-SUFFIX,update.microsoft.com,DIRECT
-  - DOMAIN-SUFFIX,windowsupdate.com,DIRECT
-  - DOMAIN-SUFFIX,windowsupdate.microsoft.com,DIRECT
-  - DOMAIN,download.microsoft.com,DIRECT
-  - DOMAIN,wustat.windows.com,DIRECT
-  - DOMAIN,ntservicepack.microsoft.com,DIRECT
-  - DOMAIN,ip.istatmenus.app,DIRECT
-  - DOMAIN,sms.imagetasks.com,DIRECT
-  - DOMAIN-SUFFIX,netspeedtestmaster.com,DIRECT
-  - DOMAIN,speedtest.macpaw.com,DIRECT
+  # --- 2. AI 规则 (走链式代理) ---
+  - DOMAIN-SUFFIX,openai.com,🤖 AI-隐私专用
+  - DOMAIN-SUFFIX,chatgpt.com,🤖 AI-隐私专用
+  - DOMAIN-SUFFIX,auth0.com,🤖 AI-隐私专用
+  - DOMAIN-SUFFIX,claude.ai,🤖 AI-隐私专用
+  - DOMAIN-SUFFIX,anthropic.com,🤖 AI-隐私专用
+  - DOMAIN-KEYWORD,gemini,🤖 AI-隐私专用
+  - DOMAIN-KEYWORD,bard,🤖 AI-隐私专用
 
-  # --- 3. 国内大厂域名 (强制直连) ---
-  - DOMAIN-SUFFIX,cn,DIRECT
+  # --- 3. 字节跳动/抖音修复 (解决截图中的泄漏) ---
+  - DOMAIN-SUFFIX,snssdk.com,DIRECT
+  - DOMAIN-SUFFIX,amemv.com,DIRECT
+  - DOMAIN-SUFFIX,douyin.com,DIRECT
+  - DOMAIN-SUFFIX,douyinpic.com,DIRECT
+  - DOMAIN-SUFFIX,douyinstatic.com,DIRECT
+  - DOMAIN-SUFFIX,douyinvod.com,DIRECT
+  - DOMAIN-SUFFIX,ixigua.com,DIRECT
+  - DOMAIN-SUFFIX,pstatp.com,DIRECT
+  - DOMAIN-SUFFIX,toutiao.com,DIRECT
+  - DOMAIN-SUFFIX,bytecdn.cn,DIRECT
+  - DOMAIN-SUFFIX,byteimg.com,DIRECT
+  - DOMAIN-SUFFIX,bytedance.com,DIRECT
+  - DOMAIN-SUFFIX,ibytedtos.com,DIRECT
+  - DOMAIN-SUFFIX,volces.com,DIRECT
+  - DOMAIN-SUFFIX,zijieapi.com,DIRECT
+
+  # --- 4. 腾讯/阿里/网易/B站 (国内直连) ---
   - DOMAIN-SUFFIX,qq.com,DIRECT
   - DOMAIN-SUFFIX,tencent.com,DIRECT
   - DOMAIN-SUFFIX,weixin.com,DIRECT
   - DOMAIN-SUFFIX,aliyun.com,DIRECT
   - DOMAIN-SUFFIX,taobao.com,DIRECT
-  - DOMAIN-SUFFIX,tmall.com,DIRECT
-  - DOMAIN-SUFFIX,jd.com,DIRECT
-  - DOMAIN-SUFFIX,baidu.com,DIRECT
-  - DOMAIN-SUFFIX,bdstatic.com,DIRECT
+  - DOMAIN-SUFFIX,alipay.com,DIRECT
   - DOMAIN-SUFFIX,163.com,DIRECT
   - DOMAIN-SUFFIX,126.net,DIRECT
-  - DOMAIN-SUFFIX,360.cn,DIRECT
-  - DOMAIN-SUFFIX,360buyimg.com,DIRECT
-  - DOMAIN-SUFFIX,douyin.com,DIRECT
-  - DOMAIN-SUFFIX,iqiyi.com,DIRECT
-  - DOMAIN-SUFFIX,youku.com,DIRECT
-  - DOMAIN-SUFFIX,mgtv.com,DIRECT
-  - DOMAIN-SUFFIX,zhihu.com,DIRECT
-  - DOMAIN-SUFFIX,weibo.com,DIRECT
-  - DOMAIN-SUFFIX,xiaomi.com,DIRECT
-  - DOMAIN-SUFFIX,meituan.com,DIRECT
-  - DOMAIN-SUFFIX,dianping.com,DIRECT
-  - DOMAIN-SUFFIX,douban.com,DIRECT
-  - DOMAIN-SUFFIX,sohu.com,DIRECT
-  - DOMAIN-SUFFIX,sogou.com,DIRECT
-  - DOMAIN-SUFFIX,sina.com.cn,DIRECT
-  - DOMAIN-SUFFIX,smzdm.com,DIRECT
-  - DOMAIN-SUFFIX,caiyunapp.com,DIRECT
-  - DOMAIN-KEYWORD,alipay,DIRECT
-  - DOMAIN-KEYWORD,alicdn,DIRECT
-  - DOMAIN-KEYWORD,baidu,DIRECT
-
-  # --- 4. B站修复版 (包含CDN域名) ---
+  - DOMAIN-SUFFIX,netease.com,DIRECT
   - DOMAIN-SUFFIX,bilibili.com,DIRECT
-  - DOMAIN-SUFFIX,bilivideo.com,DIRECT
   - DOMAIN-SUFFIX,hdslb.com,DIRECT
-  - DOMAIN-SUFFIX,bilibili.co,DIRECT
-  - DOMAIN-SUFFIX,biliapi.net,DIRECT
-  - DOMAIN-SUFFIX,biliapi.com,DIRECT
+  - DOMAIN-SUFFIX,cn,DIRECT
 
-  # --- 5. 腾讯游戏/直连IP段 ---
-  - IP-CIDR,182.254.116.0/24,DIRECT,no-resolve
-  - IP-CIDR,203.205.238.0/23,DIRECT,no-resolve
-  - IP-CIDR,203.205.254.0/23,DIRECT,no-resolve
+  # --- 5. Cloudflare CN & CDN 修复 ---
+  - DOMAIN-SUFFIX,cloudflare-cn.com,DIRECT
+  - DOMAIN-KEYWORD,cloudflare-cn,DIRECT
+  - DOMAIN-SUFFIX,baidupcs.com,DIRECT
 
-  # --- 6. 兜底逻辑 ---
-  # 中国 IP 强制直连
-  - GEOIP,CN,DIRECT,no-resolve
-  # 剩下的所有 -> 走链式代理
+  # --- 6. 系统更新直连 ---
+  - DOMAIN-SUFFIX,windowsupdate.com,DIRECT
+  - DOMAIN-SUFFIX,microsoft.com,DIRECT
+  - DOMAIN-SUFFIX,apple.com,DIRECT
+  
+  # --- 7. 兜底规则 ---
+  - GEOIP,CN,DIRECT
   - MATCH,Final
