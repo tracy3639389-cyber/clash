@@ -102,67 +102,153 @@ proxy-groups:
       - "DIRECT" 
       - "✈️ 入口-香港"
 
-# ==========================================
-# 分流规则 (已集成核弹级白名单修复)
-# ==========================================
 rules:
-  # --- 1. 局域网 & 基础直连 ---
+  # ----------------------------------------------------------------------
+  # 1. 基础直连 (局域网/保留地址)
+  # ----------------------------------------------------------------------
   - IP-CIDR,127.0.0.1/32,DIRECT,no-resolve
   - DOMAIN-SUFFIX,local,DIRECT,no-resolve
   - IP-CIDR,192.168.0.0/16,DIRECT,no-resolve
   - IP-CIDR,10.0.0.0/8,DIRECT,no-resolve
   - IP-CIDR,172.16.0.0/12,DIRECT,no-resolve
+  - IP-CIDR,100.64.0.0/10,DIRECT,no-resolve
+  - IP-CIDR,17.0.0.0/8,DIRECT,no-resolve
 
-  # --- 2. AI 规则 (走链式代理) ---
-  - DOMAIN-SUFFIX,openai.com,🤖 AI-隐私专用
-  - DOMAIN-SUFFIX,chatgpt.com,🤖 AI-隐私专用
-  - DOMAIN-SUFFIX,auth0.com,🤖 AI-隐私专用
-  - DOMAIN-SUFFIX,claude.ai,🤖 AI-隐私专用
-  - DOMAIN-SUFFIX,anthropic.com,🤖 AI-隐私专用
-  - DOMAIN-KEYWORD,gemini,🤖 AI-隐私专用
-  - DOMAIN-KEYWORD,bard,🤖 AI-隐私专用
-
-  # --- 3. 字节跳动/抖音修复 (解决截图中的泄漏) ---
+  # ----------------------------------------------------------------------
+  # 2. 字节跳动 (抖音/头条/西瓜) - 深度补全版
+  # ----------------------------------------------------------------------
+  # 核心业务
   - DOMAIN-SUFFIX,snssdk.com,DIRECT
   - DOMAIN-SUFFIX,amemv.com,DIRECT
   - DOMAIN-SUFFIX,douyin.com,DIRECT
   - DOMAIN-SUFFIX,douyinpic.com,DIRECT
   - DOMAIN-SUFFIX,douyinstatic.com,DIRECT
   - DOMAIN-SUFFIX,douyinvod.com,DIRECT
+  - DOMAIN-SUFFIX,idouyinvod.com,DIRECT
   - DOMAIN-SUFFIX,ixigua.com,DIRECT
   - DOMAIN-SUFFIX,pstatp.com,DIRECT
   - DOMAIN-SUFFIX,toutiao.com,DIRECT
+  - DOMAIN-SUFFIX,toutiaaimg.com,DIRECT
+  - DOMAIN-SUFFIX,toutiaocdn.com,DIRECT
+  - DOMAIN-SUFFIX,toutiaocloud.com,DIRECT
+  - DOMAIN-SUFFIX,toutiaopage.com,DIRECT
   - DOMAIN-SUFFIX,bytecdn.cn,DIRECT
   - DOMAIN-SUFFIX,byteimg.com,DIRECT
+  - DOMAIN-SUFFIX,bytescm.com,DIRECT
   - DOMAIN-SUFFIX,bytedance.com,DIRECT
+  - DOMAIN-SUFFIX,bytedance.net,DIRECT
+  - DOMAIN-SUFFIX,bytedns.net,DIRECT
+  # 关键基础设施 (之前漏掉的重灾区)
   - DOMAIN-SUFFIX,ibytedtos.com,DIRECT
   - DOMAIN-SUFFIX,volces.com,DIRECT
   - DOMAIN-SUFFIX,zijieapi.com,DIRECT
+  - DOMAIN-SUFFIX,ecombdapi.com,DIRECT
+  - DOMAIN-SUFFIX,pangolin-sdk-toutiao.com,DIRECT
+  - DOMAIN-SUFFIX,pglstatp-toutiao.com,DIRECT
+  - DOMAIN-KEYWORD,core-c-lq,DIRECT
+  - DOMAIN-KEYWORD,core-lq,DIRECT
+  - DOMAIN-KEYWORD,normal-c-lq,DIRECT
+  - DOMAIN-KEYWORD,normal-lq,DIRECT
+  - DOMAIN-KEYWORD,search-quic-lq,DIRECT
+  - DOMAIN-KEYWORD,search-lq,DIRECT
 
-  # --- 4. 腾讯/阿里/网易/B站 (国内直连) ---
+  # ----------------------------------------------------------------------
+  # 3. 腾讯系 (微信/QQ/游戏)
+  # ----------------------------------------------------------------------
   - DOMAIN-SUFFIX,qq.com,DIRECT
   - DOMAIN-SUFFIX,tencent.com,DIRECT
   - DOMAIN-SUFFIX,weixin.com,DIRECT
-  - DOMAIN-SUFFIX,aliyun.com,DIRECT
-  - DOMAIN-SUFFIX,taobao.com,DIRECT
-  - DOMAIN-SUFFIX,alipay.com,DIRECT
-  - DOMAIN-SUFFIX,163.com,DIRECT
-  - DOMAIN-SUFFIX,126.net,DIRECT
-  - DOMAIN-SUFFIX,netease.com,DIRECT
-  - DOMAIN-SUFFIX,bilibili.com,DIRECT
-  - DOMAIN-SUFFIX,hdslb.com,DIRECT
-  - DOMAIN-SUFFIX,cn,DIRECT
+  - DOMAIN-SUFFIX,qlogo.cn,DIRECT
+  - DOMAIN-SUFFIX,qpic.cn,DIRECT
+  - DOMAIN-SUFFIX,gtimg.cn,DIRECT
+  - DOMAIN-SUFFIX,gtimg.com,DIRECT
+  - DOMAIN-SUFFIX,cdn-go.cn,DIRECT
+  - DOMAIN-SUFFIX,smtcdns.com,DIRECT
+  - IP-CIDR,182.254.116.0/24,DIRECT,no-resolve
+  - IP-CIDR,203.205.238.0/23,DIRECT,no-resolve
+  - IP-CIDR,203.205.254.0/23,DIRECT,no-resolve
 
-  # --- 5. Cloudflare CN & CDN 修复 ---
+  # ----------------------------------------------------------------------
+  # 4. 阿里巴巴 (淘宝/支付宝/阿里云)
+  # ----------------------------------------------------------------------
+  - DOMAIN-SUFFIX,alibaba.com,DIRECT
+  - DOMAIN-SUFFIX,alibabacloud.com,DIRECT
+  - DOMAIN-SUFFIX,alicdn.com,DIRECT
+  - DOMAIN-SUFFIX,alipay.com,DIRECT
+  - DOMAIN-SUFFIX,alipayobjects.com,DIRECT
+  - DOMAIN-SUFFIX,aliyun.com,DIRECT
+  - DOMAIN-SUFFIX,aliyuncdn.com,DIRECT
+  - DOMAIN-SUFFIX,aliyuncs.com,DIRECT
+  - DOMAIN-SUFFIX,mmstat.com,DIRECT
+  - DOMAIN-SUFFIX,taobao.com,DIRECT
+  - DOMAIN-SUFFIX,tmall.com,DIRECT
+
+  # ----------------------------------------------------------------------
+  # 5. 网易 (云音乐/邮箱/游戏)
+  # ----------------------------------------------------------------------
+  - DOMAIN-SUFFIX,163.com,DIRECT
+  - DOMAIN-SUFFIX,163yun.com,DIRECT
+  - DOMAIN-SUFFIX,126.net,DIRECT
+  - DOMAIN-SUFFIX,127.net,DIRECT
+  - DOMAIN-SUFFIX,netease.com,DIRECT
+  - DOMAIN-SUFFIX,ydstatic.com,DIRECT
+  - DOMAIN-SUFFIX,music.126.net,DIRECT
+
+  # ----------------------------------------------------------------------
+  # 6. B站 (Bilibili)
+  # ----------------------------------------------------------------------
+  - DOMAIN-SUFFIX,bilibili.com,DIRECT
+  - DOMAIN-SUFFIX,bilivideo.com,DIRECT
+  - DOMAIN-SUFFIX,hdslb.com,DIRECT
+  - DOMAIN-SUFFIX,biliapi.com,DIRECT
+  - DOMAIN-SUFFIX,biliapi.net,DIRECT
+
+  # ----------------------------------------------------------------------
+  # 7. Cloudflare 中国 & 常见国内 CDN
+  # ----------------------------------------------------------------------
   - DOMAIN-SUFFIX,cloudflare-cn.com,DIRECT
   - DOMAIN-KEYWORD,cloudflare-cn,DIRECT
   - DOMAIN-SUFFIX,baidupcs.com,DIRECT
+  - DOMAIN-SUFFIX,bdstatic.com,DIRECT
+  - DOMAIN-SUFFIX,xycdn.com,DIRECT
+  - DOMAIN-SUFFIX,mcdn.bilivideo.cn,DIRECT
 
-  # --- 6. 系统更新直连 ---
+  # ----------------------------------------------------------------------
+  # 8. 系统与微软 (Win更新/国内下载)
+  # ----------------------------------------------------------------------
+  - DOMAIN-SUFFIX,dl.delivery.mp.microsoft.com,DIRECT
+  - DOMAIN-SUFFIX,update.microsoft.com,DIRECT
   - DOMAIN-SUFFIX,windowsupdate.com,DIRECT
-  - DOMAIN-SUFFIX,microsoft.com,DIRECT
-  - DOMAIN-SUFFIX,apple.com,DIRECT
-  
-  # --- 7. 兜底规则 ---
-  - GEOIP,CN,DIRECT
-  - MATCH,Final
+  - DOMAIN-SUFFIX,download.microsoft.com,DIRECT
+  - DOMAIN-SUFFIX,assets.msn.cn,DIRECT
+  - DOMAIN-SUFFIX,cn.bing.com,DIRECT
+
+  # ----------------------------------------------------------------------
+  # 9. 其他常用国内网站
+  # ----------------------------------------------------------------------
+  - DOMAIN-SUFFIX,cn,DIRECT
+  - DOMAIN-SUFFIX,360.cn,DIRECT
+  - DOMAIN-SUFFIX,360buyimg.com,DIRECT
+  - DOMAIN-SUFFIX,jd.com,DIRECT
+  - DOMAIN-SUFFIX,iqiyi.com,DIRECT
+  - DOMAIN-SUFFIX,youku.com,DIRECT
+  - DOMAIN-SUFFIX,mgtv.com,DIRECT
+  - DOMAIN-SUFFIX,zhihu.com,DIRECT
+  - DOMAIN-SUFFIX,weibo.com,DIRECT
+  - DOMAIN-SUFFIX,xiaomi.com,DIRECT
+  - DOMAIN-SUFFIX,meituan.com,DIRECT
+  - DOMAIN-SUFFIX,dianping.com,DIRECT
+  - DOMAIN-SUFFIX,douban.com,DIRECT
+  - DOMAIN-SUFFIX,sohu.com,DIRECT
+  - DOMAIN-SUFFIX,sogou.com,DIRECT
+  - DOMAIN-SUFFIX,sina.com.cn,DIRECT
+  - DOMAIN-SUFFIX,smzdm.com,DIRECT
+  - DOMAIN-SUFFIX,caiyunapp.com,DIRECT
+
+  # ----------------------------------------------------------------------
+  # 10. 最终兜底规则
+  # ----------------------------------------------------------------------
+  # 如果上述域名都没匹配到，判断IP归属地。如果是中国IP，直连。
+  - GEOIP,CN,DIRECT,no-resolve
+  # 剩下的全部走代理
+  - MATCH,🚀 节点选择
