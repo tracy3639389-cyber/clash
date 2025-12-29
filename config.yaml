@@ -1,22 +1,21 @@
 # ==========================================
-# 🔰 Clash Meta (Mihomo) 链式代理 - 修复增强版
-# 更新内容：端口改为7890混合、增强国内白名单(修复字节跳动/网易)、DNS优化
+# 🔰 Clash Meta (Mihomo) 链式代理 - 小白友好版
 # ==========================================
 
 # --- 1. 基础设置 ---
-mixed-port: 7890        # 混合端口 (HTTP+SOCKS5)
-allow-lan: true         # 开启局域网共享
-bind-address: '*'       # 允许局域网内所有IP连接
+mixed-port: 7890
+allow-lan: true
+bind-address: '*'
 mode: rule
 log-level: info
-ipv6: true              # 建议开启，避免部分V6环境报错
+ipv6: false              # ✅ 改为 false（你的网络不支持IPv6）
 external-controller: 0.0.0.0:9090
 
-# --- 2. DNS 设置 (防泄漏 + 国内优化) ---
+# --- 2. DNS 设置 ---
 dns:
   enable: true
-  ipv6: false
-  listen: 0.0.0.0:53
+  ipv6: false            # ✅ 改为 false
+  listen: 0.0.0.0:53     # ✅ 保留（给热点设备用）
   enhanced-mode: fake-ip
   fake-ip-range: 198.18.0.1/16
   fake-ip-filter:
@@ -40,71 +39,86 @@ dns:
       - 240.0.0.0/4
 
 # ==========================================
-# 👇 请在下方填入你的节点信息 👇
+# 👇 节点配置 👇
 # ==========================================
 proxies:
   # ----------------------------------------
-  # A 类：入口节点 (填写你买的机场节点/中转机)
+  # A 类：入口节点 (你买的机场节点)
   # ----------------------------------------
   - name: "✈️ 入口-香港"
-    type: ss  # 👉 如果是 vmess 就改 vmess，注意缩进
-    # 👇👇👇 在这里填入信息 👇👇👇
-    server: hk.example.com       # 填服务器地址
-    port: 12345                  # 填端口
-    cipher: aes-128-gcm          # 填加密方式
-    password: "你的密码"          # 填密码/UUID
+    type: ss
+    server: hk.example.com
+    port: 12345
+    cipher: aes-128-gcm
+    password: "你的密码"
     udp: true
 
+  # 如果有多个机场节点，继续加：
+  # - name: "✈️ 入口-日本"
+  #   type: ss
+  #   server: jp.example.com
+  #   port: 12345
+  #   cipher: aes-128-gcm
+  #   password: "你的密码"
+  #   udp: true
+
   # ----------------------------------------
-  # B 类：出口节点 (填写你的静态IP/落地机)
+  # B 类：链式出口 (静态IP落地机)
   # ----------------------------------------
-  - name: "🚀 链式-静态落地出口"
-    type: socks5  # 👉 静态IP通常是 socks5
-    # 👇👇👇 在这里填入信息 👇👇👇
-    server: 1.2.3.4              # 填落地IP
-    port: 8080                   # 填落地端口
-    username: "user"             # 用户名 (没有就删掉这行)
-    password: "password"         # 密码 (没有就删掉这行)
-    skip-cert-verify: true
+  - name: "🚀 链式-静态出口"
+    type: socks5
+    server: 1.2.3.4
+    port: 8080
+    username: "user"       # 没有就删掉
+    password: "password"   # 没有就删掉
     udp: true
-    # 👇 链式代理核心：流量先走"入口"，再连"出口"
-    dialer-proxy: "🚪 链式-入口选择"
+    # ✅ 删除了 skip-cert-verify（socks5不需要）
+    dialer-proxy: "🚪 入口选择"
 
 # ==========================================
-# 策略组 (逻辑控制)
+# 策略组 - 小白友好版
 # ==========================================
 proxy-groups:
-  # 主开关
-  - name: "Final"
+  # ========================================
+  # 🎛️ 总开关 - 选择你要用哪种模式
+  # ========================================
+  - name: "🎛️ 模式切换"
     type: select
     proxies:
-      - "🤖 AI-隐私专用"
-      - "📥 大流量下载"
-      - "DIRECT"
+      - "🔗 链式代理"      # 入口→出口，IP固定，适合AI
+      - "✈️ 纯机场"        # 只用机场，速度快，IP会变
+      - "DIRECT"           # 直连，不走代理
 
-  # AI 专用通道 (强制走链式-静态IP)
-  - name: "🤖 AI-隐私专用"
+  # ========================================
+  # 🔗 链式代理模式（入口→静态出口）
+  # ========================================
+  - name: "🔗 链式代理"
     type: select
     proxies:
-      - "🚀 链式-静态落地出口"
+      - "🚀 链式-静态出口"
 
-  # 入口切换器 (在这里选你要用哪个机场节点作为前置中转)
-  - name: "🚪 链式-入口选择"
+  # ========================================
+  # ✈️ 纯机场模式（直接用机场节点）
+  # ========================================
+  - name: "✈️ 纯机场"
     type: select
     proxies:
       - "✈️ 入口-香港"
-      # - "✈️ 入口-日本" # 如果你在上面加了其他入口，这里记得加上
+      # - "✈️ 入口-日本"  # 有多个节点就加上
 
-  # 下载专用通道 (通常建议直连或用便宜节点，不浪费静态流量)
-  - name: "📥 大流量下载"
+  # ========================================
+  # 🚪 链式代理的入口选择器
+  # （链式模式时，流量先经过这里选的节点）
+  # ========================================
+  - name: "🚪 入口选择"
     type: select
     proxies:
-      - "DIRECT" 
       - "✈️ 入口-香港"
+      # - "✈️ 入口-日本"  # 有多个节点就加上
 
-#==========================================
+# ==========================================
 # 分流规则
-#==========================================
+# ==========================================
 rules:
   # ======================================================================
   # 1. 基础直连 (局域网/保留地址)
@@ -121,25 +135,60 @@ rules:
   - DOMAIN-SUFFIX,localhost,DIRECT
   - DOMAIN-KEYWORD,localhost,DIRECT
 
+    # ======================================================================
+  # 2. 字节跳动全家桶 (超完整版 - 抖音/头条/西瓜/飞书/剪映/抖店)
   # ======================================================================
-  # 2. 字节跳动 (抖音/头条/西瓜/飞书/剪映) - 超级完整版
-  # ======================================================================
-  # --- 核心业务域名 ---
+  # === 核心业务域名 ===
   - DOMAIN-SUFFIX,bytedance.com,DIRECT
   - DOMAIN-SUFFIX,bytedance.net,DIRECT
   - DOMAIN-SUFFIX,byted.org,DIRECT
-  - DOMAIN-SUFFIX,snssdk.com,DIRECT
-  - DOMAIN-SUFFIX,amemv.com,DIRECT
   - DOMAIN-SUFFIX,douyin.com,DIRECT
+  - DOMAIN-SUFFIX,amemv.com,DIRECT
+  - DOMAIN-SUFFIX,snssdk.com,DIRECT
+  - DOMAIN-SUFFIX,isnssdk.com,DIRECT
+  - DOMAIN-SUFFIX,toutiao.com,DIRECT
+  - DOMAIN-SUFFIX,ixigua.com,DIRECT
+  - DOMAIN-SUFFIX,ixiguavideo.com,DIRECT
+  - DOMAIN-SUFFIX,pstatp.com,DIRECT
+  - DOMAIN-SUFFIX,ipstatp.com,DIRECT
+  - DOMAIN-SUFFIX,sgpstatp.com,DIRECT
+  
+  # === CDN / 静态资源 (超重要!) ===
+  - DOMAIN-SUFFIX,zjcdn.com,DIRECT
+  - DOMAIN-SUFFIX,zijiecdn.com,DIRECT
+  - DOMAIN-SUFFIX,bytecdn.cn,DIRECT
+  - DOMAIN-SUFFIX,bytegoofy.com,DIRECT
+  - DOMAIN-SUFFIX,bytescm.com,DIRECT
+  - DOMAIN-SUFFIX,bytednsdoc.com,DIRECT
+  - DOMAIN-SUFFIX,bytedns.com,DIRECT
+  - DOMAIN-SUFFIX,bytedns.net,DIRECT
+  - DOMAIN-SUFFIX,bytedntds.com,DIRECT
+  - DOMAIN-SUFFIX,bytemasterdns.com,DIRECT
+  - DOMAIN-SUFFIX,bytetos.com,DIRECT
+  - DOMAIN-SUFFIX,ibytedtos.com,DIRECT
+  - DOMAIN-SUFFIX,bytetcdn.com,DIRECT
+  - DOMAIN-SUFFIX,bytedapm.com,DIRECT
+  - DOMAIN-SUFFIX,ibytedapm.com,DIRECT
+  - DOMAIN-SUFFIX,byteimg.com,DIRECT
+  - DOMAIN-SUFFIX,ibyteimg.com,DIRECT
+  - DOMAIN-SUFFIX,byteicdn.com,DIRECT
+  - DOMAIN-SUFFIX,byteactivity.com,DIRECT
+  - DOMAIN-SUFFIX,byteacctimg.com,DIRECT
+  - DOMAIN-SUFFIX,bytedanceapi.com,DIRECT
+  - DOMAIN-SUFFIX,bytexservice.com,DIRECT
+  
+  # === 抖音专用 ===
   - DOMAIN-SUFFIX,douyinpic.com,DIRECT
   - DOMAIN-SUFFIX,douyinstatic.com,DIRECT
   - DOMAIN-SUFFIX,douyinvod.com,DIRECT
   - DOMAIN-SUFFIX,idouyinvod.com,DIRECT
   - DOMAIN-SUFFIX,douyincdn.com,DIRECT
-  - DOMAIN-SUFFIX,ixigua.com,DIRECT
-  - DOMAIN-SUFFIX,ixiguavideo.com,DIRECT
-  - DOMAIN-SUFFIX,pstatp.com,DIRECT
-  - DOMAIN-SUFFIX,toutiao.com,DIRECT
+  - DOMAIN-SUFFIX,douyinliving.com,DIRECT
+  - DOMAIN-SUFFIX,douyinlivepic.com,DIRECT
+  - DOMAIN-SUFFIX,iesdouyin.com,DIRECT
+  - DOMAIN-SUFFIX,iesliveslb.com,DIRECT
+  
+  # === 头条专用 ===
   - DOMAIN-SUFFIX,toutiaoimg.com,DIRECT
   - DOMAIN-SUFFIX,toutiaoimg.cn,DIRECT
   - DOMAIN-SUFFIX,toutiaocdn.com,DIRECT
@@ -147,74 +196,101 @@ rules:
   - DOMAIN-SUFFIX,toutiaocloud.com,DIRECT
   - DOMAIN-SUFFIX,toutiaostatic.com,DIRECT
   - DOMAIN-SUFFIX,toutiaopage.com,DIRECT
-  # --- CDN与静态资源 ---
-  - DOMAIN-SUFFIX,bytecdn.cn,DIRECT
-  - DOMAIN-SUFFIX,byteimg.com,DIRECT
-  - DOMAIN-SUFFIX,bytegoofy.com,DIRECT
-  - DOMAIN-SUFFIX,bytescm.com,DIRECT
-  - DOMAIN-SUFFIX,bytednsdoc.com,DIRECT
-  - DOMAIN-SUFFIX,bytedns.net,DIRECT
-  - DOMAIN-SUFFIX,bytetos.com,DIRECT
-  - DOMAIN-SUFFIX,ibytedtos.com,DIRECT
-  - DOMAIN-SUFFIX,bytetcdn.com,DIRECT
-  - DOMAIN-SUFFIX,bytedapm.com,DIRECT
-  - DOMAIN-SUFFIX,ibyteimg.com,DIRECT
-  # --- 火山引擎/云服务 ---
+  - DOMAIN-SUFFIX,toutiaoapi.com,DIRECT
+  - DOMAIN-SUFFIX,toutiaovod.com,DIRECT
+  
+  # === 西瓜视频 ===
+  - DOMAIN-SUFFIX,bdxiguaimg.com,DIRECT
+  - DOMAIN-SUFFIX,bdxiguastatic.com,DIRECT
+  
+  # === 火山引擎/云服务 ===
   - DOMAIN-SUFFIX,volces.com,DIRECT
   - DOMAIN-SUFFIX,volcengine.com,DIRECT
+  - DOMAIN-SUFFIX,volcengineapi.com,DIRECT
   - DOMAIN-SUFFIX,volccdn.com,DIRECT
   - DOMAIN-SUFFIX,volcscdn.com,DIRECT
   - DOMAIN-SUFFIX,volcvideo.com,DIRECT
   - DOMAIN-SUFFIX,volcimgcdn.com,DIRECT
-  # --- API与基础设施 ---
+  
+  # === API/基础设施 ===
   - DOMAIN-SUFFIX,zijieapi.com,DIRECT
   - DOMAIN-SUFFIX,zjbyte.com,DIRECT
   - DOMAIN-SUFFIX,zijieimg.com,DIRECT
   - DOMAIN-SUFFIX,ecombdapi.com,DIRECT
   - DOMAIN-SUFFIX,oceanengine.com,DIRECT
   - DOMAIN-SUFFIX,bdurl.net,DIRECT
-  # --- 广告/SDK ---
+  - DOMAIN-SUFFIX,ctobsnssdk.com,DIRECT
+  
+  # === 广告SDK ===
   - DOMAIN-SUFFIX,pangolin-sdk-toutiao.com,DIRECT
   - DOMAIN-SUFFIX,pglstatp-toutiao.com,DIRECT
   - DOMAIN-SUFFIX,pangolin.snssdk.com,DIRECT
-  # --- 飞书 ---
+  
+  # === 飞书 ===
   - DOMAIN-SUFFIX,feishu.cn,DIRECT
   - DOMAIN-SUFFIX,feishucdn.com,DIRECT
   - DOMAIN-SUFFIX,feishupkg.com,DIRECT
   - DOMAIN-SUFFIX,larkoffice.com,DIRECT
   - DOMAIN-SUFFIX,larksuite.com,DIRECT
-  # --- 剪映/醒图 ---
+  
+  # === 剪映/醒图/CapCut ===
   - DOMAIN-SUFFIX,capcut.com,DIRECT
   - DOMAIN-SUFFIX,capcut.cn,DIRECT
   - DOMAIN-SUFFIX,jianying.com,DIRECT
-  # --- 懂车帝 ---
+  
+  # === 懂车帝 ===
   - DOMAIN-SUFFIX,dongchedi.com,DIRECT
-  # --- 关键词匹配(防漏网) ---
+  
+  # === 抖店/电商 ===
+  - DOMAIN-SUFFIX,jinritemai.com,DIRECT
+  
+  # === 番茄小说 ===
+  - DOMAIN-SUFFIX,fanqienovel.com,DIRECT
+  - DOMAIN-SUFFIX,fqnovelpic.com,DIRECT
+  
+  # === 关键词匹配 (兜底防漏) ===
   - DOMAIN-KEYWORD,snssdk,DIRECT
   - DOMAIN-KEYWORD,amemv,DIRECT
   - DOMAIN-KEYWORD,bytedance,DIRECT
   - DOMAIN-KEYWORD,bytecdn,DIRECT
   - DOMAIN-KEYWORD,byteimg,DIRECT
   - DOMAIN-KEYWORD,bytetos,DIRECT
+  - DOMAIN-KEYWORD,bytedns,DIRECT
+  - DOMAIN-KEYWORD,zjcdn,DIRECT
+  - DOMAIN-KEYWORD,zijiecdn,DIRECT
   - DOMAIN-KEYWORD,volces,DIRECT
   - DOMAIN-KEYWORD,volccdn,DIRECT
+  - DOMAIN-KEYWORD,volcengine,DIRECT
   - DOMAIN-KEYWORD,toutiao,DIRECT
   - DOMAIN-KEYWORD,douyin,DIRECT
   - DOMAIN-KEYWORD,douyinvod,DIRECT
+  - DOMAIN-KEYWORD,douyincdn,DIRECT
+  - DOMAIN-KEYWORD,douyinliving,DIRECT
+  - DOMAIN-KEYWORD,iesdouyin,DIRECT
+  - DOMAIN-KEYWORD,iesliveslb,DIRECT
   - DOMAIN-KEYWORD,ixigua,DIRECT
   - DOMAIN-KEYWORD,pstatp,DIRECT
   - DOMAIN-KEYWORD,feishu,DIRECT
+  - DOMAIN-KEYWORD,jinritemai,DIRECT
   - DOMAIN-KEYWORD,core-c-lq,DIRECT
   - DOMAIN-KEYWORD,core-lq,DIRECT
   - DOMAIN-KEYWORD,normal-c-lq,DIRECT
   - DOMAIN-KEYWORD,normal-lq,DIRECT
   - DOMAIN-KEYWORD,search-quic-lq,DIRECT
   - DOMAIN-KEYWORD,search-lq,DIRECT
+  # === 字节跳动 - 补充遗漏 ===
+  - DOMAIN-SUFFIX,byte-test.com,DIRECT
+  - DOMAIN-SUFFIX,bytetest.com,DIRECT
+  - DOMAIN-SUFFIX,byteperfops.com,DIRECT
+  
+  # 关键词也加上
+  - DOMAIN-KEYWORD,byte-test,DIRECT
+  - DOMAIN-KEYWORD,perfops,DIRECT
+
 
   # ======================================================================
-  # 3. 腾讯系(微信/QQ/游戏/腾讯云)
+  # 3. 腾讯系
   # ======================================================================
-  # --- 核心域名 ---
   - DOMAIN-SUFFIX,qq.com,DIRECT
   - DOMAIN-SUFFIX,tencent.com,DIRECT
   - DOMAIN-SUFFIX,tencent.cn,DIRECT
@@ -225,13 +301,11 @@ rules:
   - DOMAIN-SUFFIX,qcloudimg.com,DIRECT
   - DOMAIN-SUFFIX,qcloudcdn.com,DIRECT
   - DOMAIN-SUFFIX,qcloudzygj.cn,DIRECT
-  # --- 微信 ---
   - DOMAIN-SUFFIX,weixin.com,DIRECT
   - DOMAIN-SUFFIX,weixin.qq.com,DIRECT
   - DOMAIN-SUFFIX,wechat.com,DIRECT
   - DOMAIN-SUFFIX,weixinbridge.com,DIRECT
   - DOMAIN-SUFFIX,wxs.qq.com,DIRECT
-  # --- CDN与静态资源 ---
   - DOMAIN-SUFFIX,qlogo.cn,DIRECT
   - DOMAIN-SUFFIX,qpic.cn,DIRECT
   - DOMAIN-SUFFIX,gtimg.cn,DIRECT
@@ -242,15 +316,12 @@ rules:
   - DOMAIN-SUFFIX,smtcdns.net,DIRECT
   - DOMAIN-SUFFIX,myapp.com,DIRECT
   - DOMAIN-SUFFIX,myqcloud.com,DIRECT
-  # --- 腾讯视频 ---
   - DOMAIN-SUFFIX,v.qq.com,DIRECT
   - DOMAIN-SUFFIX,video.qq.com,DIRECT
   - DOMAIN-SUFFIX,livep.l.qq.com,DIRECT
-  # --- 游戏 ---
   - DOMAIN-SUFFIX,wegame.com,DIRECT
   - DOMAIN-SUFFIX,wegame.com.cn,DIRECT
   - DOMAIN-SUFFIX,tgp.qq.com,DIRECT
-  # --- IP段 ---
   - IP-CIDR,182.254.0.0/16,DIRECT,no-resolve
   - IP-CIDR,203.205.128.0/17,DIRECT,no-resolve
   - IP-CIDR,183.3.224.0/21,DIRECT,no-resolve
@@ -258,9 +329,8 @@ rules:
   - IP-CIDR,140.207.69.0/24,DIRECT,no-resolve
 
   # ======================================================================
-  # 4. 阿里巴巴 (淘宝/天猫/支付宝/阿里云/钉钉/饿了么)
+  # 4. 阿里巴巴
   # ======================================================================
-  # --- 核心域名 ---
   - DOMAIN-SUFFIX,alibaba.com,DIRECT
   - DOMAIN-SUFFIX,alibaba.com.cn,DIRECT
   - DOMAIN-SUFFIX,alibabacloud.com,DIRECT
@@ -274,7 +344,6 @@ rules:
   - DOMAIN-SUFFIX,aliyundrive.com,DIRECT
   - DOMAIN-SUFFIX,aliyundrive.net,DIRECT
   - DOMAIN-SUFFIX,alicloudccp.com,DIRECT
-  # --- 淘宝/天猫 ---
   - DOMAIN-SUFFIX,taobao.com,DIRECT
   - DOMAIN-SUFFIX,taobaocdn.com,DIRECT
   - DOMAIN-SUFFIX,tbcache.com,DIRECT
@@ -283,38 +352,30 @@ rules:
   - DOMAIN-SUFFIX,tmall.hk,DIRECT
   - DOMAIN-SUFFIX,mmstat.com,DIRECT
   - DOMAIN-SUFFIX,tanx.com,DIRECT
-  # --- 钉钉 ---
   - DOMAIN-SUFFIX,dingtalk.com,DIRECT
   - DOMAIN-SUFFIX,dingtalk.cn,DIRECT
   - DOMAIN-SUFFIX,dingtalkapps.com,DIRECT
-  # --- 饿了么/口碑 ---
   - DOMAIN-SUFFIX,ele.me,DIRECT
   - DOMAIN-SUFFIX,elemecdn.com,DIRECT
   - DOMAIN-SUFFIX,koubei.com,DIRECT
-  # --- 闲鱼/1688 ---
   - DOMAIN-SUFFIX,goofish.com,DIRECT
   - DOMAIN-SUFFIX,2.cn,DIRECT
   - DOMAIN-SUFFIX,1688.com,DIRECT
-  # --- 优酷/土豆 ---
   - DOMAIN-SUFFIX,youku.com,DIRECT
   - DOMAIN-SUFFIX,ykimg.com,DIRECT
   - DOMAIN-SUFFIX,tudou.com,DIRECT
   - DOMAIN-SUFFIX,soku.com,DIRECT
-  # --- 高德地图 ---
   - DOMAIN-SUFFIX,amap.com,DIRECT
   - DOMAIN-SUFFIX,autonavi.com,DIRECT
-  # --- UC浏览器 ---
   - DOMAIN-SUFFIX,ucweb.com,DIRECT
   - DOMAIN-SUFFIX,uc.cn,DIRECT
-  # --- 菜鸟物流 ---
   - DOMAIN-SUFFIX,cainiao.com,DIRECT
   - DOMAIN-SUFFIX,guoguo-app.com,DIRECT
-  # --- 夸克---
   - DOMAIN-SUFFIX,quark.cn,DIRECT
   - DOMAIN-SUFFIX,quarkcdn.com,DIRECT
 
   # ======================================================================
-  # 5. 百度系 (搜索/网盘/地图/贴吧)
+  # 5. 百度系
   # ======================================================================
   - DOMAIN-SUFFIX,baidu.com,DIRECT
   - DOMAIN-SUFFIX,baidubce.com,DIRECT
@@ -342,7 +403,7 @@ rules:
   - DOMAIN-KEYWORD,bdimg,DIRECT
 
   # ======================================================================
-  # 6. 网易系 (云音乐/邮箱/游戏/新闻)
+  # 6. 网易系
   # ======================================================================
   - DOMAIN-SUFFIX,163.com,DIRECT
   - DOMAIN-SUFFIX,163yun.com,DIRECT
@@ -360,18 +421,16 @@ rules:
   - DOMAIN-SUFFIX,yeah.net,DIRECT
   - DOMAIN-SUFFIX,fp.ps.netease.com,DIRECT
   - DOMAIN-SUFFIX,res.netease.com,DIRECT
-  # --- 网易云音乐 ---
   - DOMAIN-SUFFIX,music.126.net,DIRECT
   - DOMAIN-SUFFIX,music.163.com,DIRECT
   - DOMAIN-SUFFIX,y.music.163.com,DIRECT
   - DOMAIN-SUFFIX,p1.music.126.net,DIRECT
   - DOMAIN-SUFFIX,p2.music.126.net,DIRECT
-  # --- 网易游戏 ---
   - DOMAIN-SUFFIX,nie.netease.com,DIRECT
   - DOMAIN-SUFFIX,blizzard.cn,DIRECT
 
   # ======================================================================
-  # 7. Bilibili (B站)
+  # 7. Bilibili
   # ======================================================================
   - DOMAIN-SUFFIX,bilibili.com,DIRECT
   - DOMAIN-SUFFIX,bilibili.cn,DIRECT
@@ -393,7 +452,7 @@ rules:
   - DOMAIN-KEYWORD,bilibili,DIRECT
 
   # ======================================================================
-  # 8. 京东系 (购物/物流/金融)
+  # 8. 京东系
   # ======================================================================
   - DOMAIN-SUFFIX,jd.com,DIRECT
   - DOMAIN-SUFFIX,jd.hk,DIRECT
@@ -409,7 +468,7 @@ rules:
   - DOMAIN-SUFFIX,jcloudlv.com,DIRECT
 
   # ======================================================================
-  # 9. 华为系 (商城/云服务/鸿蒙)
+  # 9. 华为系
   # ======================================================================
   - DOMAIN-SUFFIX,huawei.com,DIRECT
   - DOMAIN-SUFFIX,huaweicloud.com,DIRECT
@@ -422,7 +481,7 @@ rules:
   - DOMAIN-SUFFIX,dbankcdn.com,DIRECT
 
   # ======================================================================
-  # 10. 小米系 (商城/智能家居/MIUI)
+  # 10. 小米系
   # ======================================================================
   - DOMAIN-SUFFIX,xiaomi.com,DIRECT
   - DOMAIN-SUFFIX,xiaomi.cn,DIRECT
@@ -439,14 +498,12 @@ rules:
   # ======================================================================
   # 11. 美团/大众点评/滴滴
   # ======================================================================
-  # --- 美团/点评 ---
   - DOMAIN-SUFFIX,meituan.com,DIRECT
   - DOMAIN-SUFFIX,meituan.net,DIRECT
   - DOMAIN-SUFFIX,meituancdn.com,DIRECT
   - DOMAIN-SUFFIX,mtyun.com,DIRECT
   - DOMAIN-SUFFIX,dianping.com,DIRECT
   - DOMAIN-SUFFIX,dpfile.com,DIRECT
-  # --- 滴滴 ---
   - DOMAIN-SUFFIX,didiglobal.com,DIRECT
   - DOMAIN-SUFFIX,didichuxing.com,DIRECT
   - DOMAIN-SUFFIX,didistatic.com,DIRECT
@@ -490,35 +547,29 @@ rules:
   # ======================================================================
   # 15. 知乎/豆瓣/小红书
   # ======================================================================
-  # --- 知乎 ---
   - DOMAIN-SUFFIX,zhihu.com,DIRECT
   - DOMAIN-SUFFIX,zhimg.com,DIRECT
   - DOMAIN-SUFFIX,zhihuishu.com,DIRECT
-  # --- 豆瓣 ---
   - DOMAIN-SUFFIX,douban.com,DIRECT
   - DOMAIN-SUFFIX,doubanio.com,DIRECT
   - DOMAIN-SUFFIX,douban.fm,DIRECT
-  # --- 小红书 ---
   - DOMAIN-SUFFIX,xiaohongshu.com,DIRECT
   - DOMAIN-SUFFIX,xhscdn.com,DIRECT
   - DOMAIN-SUFFIX,xhslink.com,DIRECT
   - DOMAIN-SUFFIX,xhs-cdn.com,DIRECT
 
   # ======================================================================
-  # 16. 视频网站 (爱奇艺/优酷/芒果/搜狐)
+  # 16. 视频网站
   # ======================================================================
-  # --- 爱奇艺 ---
   - DOMAIN-SUFFIX,iqiyi.com,DIRECT
   - DOMAIN-SUFFIX,iqiyipic.com,DIRECT
   - DOMAIN-SUFFIX,71.am,DIRECT
   - DOMAIN-SUFFIX,qiyi.com,DIRECT
   - DOMAIN-SUFFIX,qiyipic.com,DIRECT
   - DOMAIN-SUFFIX,pps.tv,DIRECT
-  # --- 芒果TV ---
   - DOMAIN-SUFFIX,mgtv.com,DIRECT
   - DOMAIN-SUFFIX,hitv.com,DIRECT
   - DOMAIN-SUFFIX,hunantv.com,DIRECT
-  # --- 搜狐视频 ---
   - DOMAIN-SUFFIX,sohu.com,DIRECT
   - DOMAIN-SUFFIX,sohucs.com,DIRECT
   - DOMAIN-SUFFIX,itc.cn,DIRECT
@@ -527,18 +578,14 @@ rules:
   # ======================================================================
   # 17. 在线文档/办公
   # ======================================================================
-  # --- 腾讯文档 ---
   - DOMAIN-SUFFIX,docs.qq.com,DIRECT
   - DOMAIN-SUFFIX,txdocs.qq.com,DIRECT
-  # --- 金山文档/WPS ---
   - DOMAIN-SUFFIX,wps.cn,DIRECT
   - DOMAIN-SUFFIX,wps.com,DIRECT
   - DOMAIN-SUFFIX,kdocs.cn,DIRECT
   - DOMAIN-SUFFIX,kingsoft.com,DIRECT
   - DOMAIN-SUFFIX,ksyun.com,DIRECT
-  # --- 石墨文档 ---
   - DOMAIN-SUFFIX,shimo.im,DIRECT
-  # --- 语雀 ---
   - DOMAIN-SUFFIX,yuque.com,DIRECT
 
   # ======================================================================
@@ -560,13 +607,11 @@ rules:
   - DOMAIN-SUFFIX,sogoucdn.com,DIRECT
   - DOMAIN-SUFFIX,sogo.com,DIRECT
 
+    # ======================================================================
+  # 19. 银行/金融/支付（续）
   # ======================================================================
-  # 19. 银行/金融/支付
-  # ======================================================================
-  # --- 银联 ---
   - DOMAIN-SUFFIX,unionpay.com,DIRECT
   - DOMAIN-SUFFIX,95516.com,DIRECT
-  # --- 各大银行 ---
   - DOMAIN-SUFFIX,icbc.com.cn,DIRECT
   - DOMAIN-SUFFIX,ccb.com,DIRECT
   - DOMAIN-SUFFIX,ccb.com.cn,DIRECT
@@ -595,29 +640,24 @@ rules:
   # ======================================================================
   # 21. 常用工具/其他网站
   # ======================================================================
-  # --- 什么值得买 ---
   - DOMAIN-SUFFIX,smzdm.com,DIRECT
   - DOMAIN-SUFFIX,zdmimg.com,DIRECT
-  # --- 天气/彩云---
   - DOMAIN-SUFFIX,caiyunapp.com,DIRECT
   - DOMAIN-SUFFIX,weather.com.cn,DIRECT
-  # --- 12306火车票 ---
   - DOMAIN-SUFFIX,12306.cn,DIRECT
   - DOMAIN-SUFFIX,12306.com.cn,DIRECT
-  # --- 携程/去哪儿 ---
   - DOMAIN-SUFFIX,ctrip.com,DIRECT
   - DOMAIN-SUFFIX,qunar.com,DIRECT
   - DOMAIN-SUFFIX,qunarzz.com,DIRECT
-  # --- 贝壳/链家 ---
   - DOMAIN-SUFFIX,ke.com,DIRECT
   - DOMAIN-SUFFIX,lianjia.com,DIRECT
-  # --- 58同城/赶集 ---
   - DOMAIN-SUFFIX,58.com,DIRECT
   - DOMAIN-SUFFIX,ganji.com,DIRECT
   - DOMAIN-SUFFIX,anjuke.com,DIRECT
+
+  # ======================================================================
   # 22. CDN/云服务通用
   # ======================================================================
-  # --- 国内CDN ---
   - DOMAIN-SUFFIX,cloudflare-cn.com,DIRECT
   - DOMAIN-KEYWORD,cloudflare-cn,DIRECT
   - DOMAIN-SUFFIX,xycdn.com,DIRECT
@@ -634,30 +674,25 @@ rules:
   - DOMAIN-SUFFIX,qbox.me,DIRECT
   - DOMAIN-SUFFIX,ucloud.cn,DIRECT
   - DOMAIN-SUFFIX,ucdl.pp.uc.cn,DIRECT
-  # --- 又拍云 ---
   - DOMAIN-SUFFIX,upyun.com,DIRECT
   - DOMAIN-SUFFIX,upaiyun.com,DIRECT
-  # --- 七牛云 ---
   - DOMAIN-SUFFIX,qiniu.com,DIRECT
 
   # ======================================================================
   # 23. 游戏平台
   # ======================================================================
-  # --- Steam中国 ---
   - DOMAIN-SUFFIX,steamcontent.com,DIRECT
   - DOMAIN-SUFFIX,csgo.wmsj.cn,DIRECT
   - DOMAIN-SUFFIX,dota2.wmsj.cn,DIRECT
   - DOMAIN-SUFFIX,wmsjsteam.com,DIRECT
   - DOMAIN-SUFFIX,dl.steam.clngaa.com,DIRECT
   - DOMAIN-SUFFIX,dl.steam.ksyna.com,DIRECT
-  # --- 米哈游 ---
   - DOMAIN-SUFFIX,mihoyo.com,DIRECT
   - DOMAIN-SUFFIX,mihoyogift.com,DIRECT
   - DOMAIN-SUFFIX,hoyoverse.com,DIRECT
   - DOMAIN-SUFFIX,yuanshen.com,DIRECT
   - DOMAIN-SUFFIX,bhsr.com,DIRECT
   - DOMAIN-SUFFIX,starrails.com,DIRECT
-  # --- 完美世界 ---
   - DOMAIN-SUFFIX,wanmei.com,DIRECT
   - DOMAIN-SUFFIX,pwrd.com,DIRECT
 
@@ -677,7 +712,7 @@ rules:
   - DOMAIN-SUFFIX,zuoyebang.cc,DIRECT
 
   # ======================================================================
-  # 25. 系统更新 (Windows/Apple国内)
+  # 25. 系统更新
   # ======================================================================
   - DOMAIN-SUFFIX,dl.delivery.mp.microsoft.com,DIRECT
   - DOMAIN-SUFFIX,update.microsoft.com,DIRECT
@@ -687,7 +722,6 @@ rules:
   - DOMAIN-SUFFIX,cn.bing.com,DIRECT
   - DOMAIN-SUFFIX,msftconnecttest.com,DIRECT
   - DOMAIN-SUFFIX,msftncsi.com,DIRECT
-  # --- Apple中国 ---
   - DOMAIN-SUFFIX,apple.cn,DIRECT
   - DOMAIN-SUFFIX,apple.com.cn,DIRECT
   - DOMAIN-SUFFIX,icloud.com.cn,DIRECT
@@ -707,25 +741,59 @@ rules:
   - DOMAIN-SUFFIX,cn,DIRECT
 
   # ======================================================================
-  # 28. AI服务 (走代理)
+  # 28. AI服务 (走代理) ✅ 已修复：改用正确的策略组名
   # ======================================================================
-  - DOMAIN-SUFFIX,openai.com,🎯 出口选择
-  - DOMAIN-SUFFIX,chatgpt.com,🎯 出口选择
-  - DOMAIN-SUFFIX,auth0.com,🎯 出口选择
-  - DOMAIN-SUFFIX,claude.ai,🎯 出口选择
-  - DOMAIN-SUFFIX,anthropic.com,🎯 出口选择
-  - DOMAIN-SUFFIX,oaistatic.com,🎯 出口选择
-  - DOMAIN-SUFFIX,oaiusercontent.com,🎯 出口选择
-  - DOMAIN-KEYWORD,openai,🎯 出口选择
-  - DOMAIN-KEYWORD,chatgpt,🎯 出口选择
-  - DOMAIN-KEYWORD,gemini,🎯 出口选择
-  - DOMAIN-KEYWORD,bard,🎯 出口选择
-  - DOMAIN-KEYWORD,anthropic,🎯 出口选择
+  - DOMAIN-SUFFIX,openai.com,🎛️ 模式切换
+  - DOMAIN-SUFFIX,chatgpt.com,🎛️ 模式切换
+  - DOMAIN-SUFFIX,auth0.com,🎛️ 模式切换
+  - DOMAIN-SUFFIX,claude.ai,🎛️ 模式切换
+  - DOMAIN-SUFFIX,anthropic.com,🎛️ 模式切换
+  - DOMAIN-SUFFIX,oaistatic.com,🎛️ 模式切换
+  - DOMAIN-SUFFIX,oaiusercontent.com,🎛️ 模式切换
+  - DOMAIN-SUFFIX,sora.com,🎛️ 模式切换
+  - DOMAIN-SUFFIX,intercom.io,🎛️ 模式切换
+  - DOMAIN-SUFFIX,intercomcdn.com,🎛️ 模式切换
+  - DOMAIN-SUFFIX,featuregates.org,🎛️ 模式切换
+  - DOMAIN-SUFFIX,statsigapi.net,🎛️ 模式切换
+  - DOMAIN-SUFFIX,hcaptcha.com,🎛️ 模式切换
+  - DOMAIN-SUFFIX,arkoselabs.com,🎛️ 模式切换
+  - DOMAIN-KEYWORD,openai,🎛️ 模式切换
+  - DOMAIN-KEYWORD,chatgpt,🎛️ 模式切换
+  - DOMAIN-KEYWORD,gemini,🎛️ 模式切换
+  - DOMAIN-KEYWORD,bard,🎛️ 模式切换
+  - DOMAIN-KEYWORD,anthropic,🎛️ 模式切换
+  - DOMAIN-KEYWORD,claude,🎛️ 模式切换
 
   # ======================================================================
-  # 29. 最终兜底规则
+  # 29. 其他常用国外网站 (走代理)
+  # ======================================================================
+  - DOMAIN-SUFFIX,google.com,🎛️ 模式切换
+  - DOMAIN-SUFFIX,googleapis.com,🎛️ 模式切换
+  - DOMAIN-SUFFIX,googlevideo.com,🎛️ 模式切换
+  - DOMAIN-SUFFIX,youtube.com,🎛️ 模式切换
+  - DOMAIN-SUFFIX,ytimg.com,🎛️ 模式切换
+  - DOMAIN-SUFFIX,ggpht.com,🎛️ 模式切换
+  - DOMAIN-SUFFIX,github.com,🎛️ 模式切换
+  - DOMAIN-SUFFIX,githubusercontent.com,🎛️ 模式切换
+  - DOMAIN-SUFFIX,twitter.com,🎛️ 模式切换
+  - DOMAIN-SUFFIX,x.com,🎛️ 模式切换
+  - DOMAIN-SUFFIX,twimg.com,🎛️ 模式切换
+  - DOMAIN-SUFFIX,telegram.org,🎛️ 模式切换
+  - DOMAIN-SUFFIX,t.me,🎛️ 模式切换
+  - DOMAIN-SUFFIX,facebook.com,🎛️ 模式切换
+  - DOMAIN-SUFFIX,instagram.com,🎛️ 模式切换
+  - DOMAIN-SUFFIX,whatsapp.com,🎛️ 模式切换
+  - DOMAIN-SUFFIX,discord.com,🎛️ 模式切换
+  - DOMAIN-SUFFIX,discordapp.com,🎛️ 模式切换
+  - DOMAIN-SUFFIX,netflix.com,🎛️ 模式切换
+  - DOMAIN-SUFFIX,nflxvideo.net,🎛️ 模式切换
+  - DOMAIN-SUFFIX,spotify.com,🎛️ 模式切换
+  - DOMAIN-SUFFIX,wikipedia.org,🎛️ 模式切换
+  - DOMAIN-SUFFIX,wikimedia.org,🎛️ 模式切换
+
+  # ======================================================================
+  # 30. 最终兜底规则
   # ======================================================================
   - GEOIP,CN,DIRECT,no-resolve
-  - MATCH,Final
-
+  - MATCH,🎛️ 模式切换
 
