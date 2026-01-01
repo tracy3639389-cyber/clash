@@ -739,61 +739,10 @@ rules:
   # 27. 通用后缀
   # ======================================================================
   - DOMAIN-SUFFIX,cn,DIRECT
-
-  # ======================================================================
-  # 28. AI服务 (走代理) ✅ 已修复：改用正确的策略组名
-  # ======================================================================
-  - DOMAIN-SUFFIX,openai.com,🎛️ 模式切换
-  - DOMAIN-SUFFIX,chatgpt.com,🎛️ 模式切换
-  - DOMAIN-SUFFIX,auth0.com,🎛️ 模式切换
-  - DOMAIN-SUFFIX,claude.ai,🎛️ 模式切换
-  - DOMAIN-SUFFIX,anthropic.com,🎛️ 模式切换
-  - DOMAIN-SUFFIX,oaistatic.com,🎛️ 模式切换
-  - DOMAIN-SUFFIX,oaiusercontent.com,🎛️ 模式切换
-  - DOMAIN-SUFFIX,sora.com,🎛️ 模式切换
-  - DOMAIN-SUFFIX,intercom.io,🎛️ 模式切换
-  - DOMAIN-SUFFIX,intercomcdn.com,🎛️ 模式切换
-  - DOMAIN-SUFFIX,featuregates.org,🎛️ 模式切换
-  - DOMAIN-SUFFIX,statsigapi.net,🎛️ 模式切换
-  - DOMAIN-SUFFIX,hcaptcha.com,🎛️ 模式切换
-  - DOMAIN-SUFFIX,arkoselabs.com,🎛️ 模式切换
-  - DOMAIN-KEYWORD,openai,🎛️ 模式切换
-  - DOMAIN-KEYWORD,chatgpt,🎛️ 模式切换
-  - DOMAIN-KEYWORD,gemini,🎛️ 模式切换
-  - DOMAIN-KEYWORD,bard,🎛️ 模式切换
-  - DOMAIN-KEYWORD,anthropic,🎛️ 模式切换
-  - DOMAIN-KEYWORD,claude,🎛️ 模式切换
-
-  # ======================================================================
-  # 29. 其他常用国外网站 (走代理)
-  # ======================================================================
-  - DOMAIN-SUFFIX,google.com,🎛️ 模式切换
-  - DOMAIN-SUFFIX,googleapis.com,🎛️ 模式切换
-  - DOMAIN-SUFFIX,googlevideo.com,🎛️ 模式切换
-  - DOMAIN-SUFFIX,youtube.com,🎛️ 模式切换
-  - DOMAIN-SUFFIX,ytimg.com,🎛️ 模式切换
-  - DOMAIN-SUFFIX,ggpht.com,🎛️ 模式切换
-  - DOMAIN-SUFFIX,github.com,🎛️ 模式切换
-  - DOMAIN-SUFFIX,githubusercontent.com,🎛️ 模式切换
-  - DOMAIN-SUFFIX,twitter.com,🎛️ 模式切换
-  - DOMAIN-SUFFIX,x.com,🎛️ 模式切换
-  - DOMAIN-SUFFIX,twimg.com,🎛️ 模式切换
-  - DOMAIN-SUFFIX,telegram.org,🎛️ 模式切换
-  - DOMAIN-SUFFIX,t.me,🎛️ 模式切换
-  - DOMAIN-SUFFIX,facebook.com,🎛️ 模式切换
-  - DOMAIN-SUFFIX,instagram.com,🎛️ 模式切换
-  - DOMAIN-SUFFIX,whatsapp.com,🎛️ 模式切换
-  - DOMAIN-SUFFIX,discord.com,🎛️ 模式切换
-  - DOMAIN-SUFFIX,discordapp.com,🎛️ 模式切换
-  - DOMAIN-SUFFIX,netflix.com,🎛️ 模式切换
-  - DOMAIN-SUFFIX,nflxvideo.net,🎛️ 模式切换
-  - DOMAIN-SUFFIX,spotify.com,🎛️ 模式切换
-  - DOMAIN-SUFFIX,wikipedia.org,🎛️ 模式切换
-  - DOMAIN-SUFFIX,wikimedia.org,🎛️ 模式切换
-
   # ======================================================================
   # 30. 最终兜底规则
   # ======================================================================
   - GEOIP,CN,DIRECT,no-resolve
   - MATCH,🎛️ 模式切换
+
 
