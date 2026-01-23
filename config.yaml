@@ -215,6 +215,23 @@ proxy-groups:
 # 分流规则
 # ==========================================
 rules:
+  # 贝锐/花生壳/向日葵 核心域名后缀
+  - DOMAIN-SUFFIX,vicp.fun,DIRECT
+  - DOMAIN-SUFFIX,vicp.net,DIRECT
+  - DOMAIN-SUFFIX,vicp.cc,DIRECT
+  - DOMAIN-SUFFIX,oray.com,DIRECT
+  - DOMAIN-SUFFIX,oray.net,DIRECT
+  - DOMAIN-SUFFIX,orayimg.com,DIRECT
+  - DOMAIN-SUFFIX,peanuthull.com,DIRECT
+  - DOMAIN-SUFFIX,phddns.com,DIRECT
+  - DOMAIN-SUFFIX,sunlogin.net,DIRECT
+  - DOMAIN-SUFFIX,sunlogin.oray.com,DIRECT
+  
+  # 关键词兜底 (防止漏网之鱼)
+  - DOMAIN-KEYWORD,peanuthull,DIRECT
+  - DOMAIN-KEYWORD,oray,DIRECT
+  - DOMAIN-KEYWORD,vicp,DIRECT
+
   # ======================================================================
   # 1. 基础直连 (局域网/保留地址)
   # ======================================================================
@@ -838,3 +855,4 @@ rules:
   # ======================================================================
   - GEOIP,CN,DIRECT,no-resolve
   - MATCH,🎛️ 模式切换
+
